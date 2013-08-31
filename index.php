@@ -6,15 +6,12 @@ if (!file_exists ('config.php')){
 
   if ($_POST['app_key'] && $_POST['app_secret']){
 
-    //$data = array('data' => 'this', 'data2' => 'that');
-    //$data = http_build_query($data);
     $context =
         array('http'=>
           array(
             'method' => "post",
             'header' => 'Authorization: OAuth oauth_version="1.0", oauth_signature_method="PLAINTEXT", oauth_consumer_key="'.$_POST['app_key'].'", oauth_signature="'.$_POST['app_secret'].'&"\r\n' .
-                        'Content-Length: 0\r\n' /**,
-            'content' => $data **/
+                        'Content-Length: 0\r\n'
           )
         );
     $context = stream_context_create($context);
@@ -34,15 +31,12 @@ if (!file_exists ('config.php')){
     header('Location: https://www.dropbox.com/1/oauth/authorize?oauth_token='.$oauth_token.'&oauth_callback='.$_SERVER['HTTP_REFERER']);
 
   } else if ($_GET['uid'] && $_GET['oauth_token']){
-    //$data = array('data' => 'this', 'data2' => 'that');
-    //$data = http_build_query($data);
     $context =
         array('http'=>
           array(
             'method' => 'post',
             'header' >= 'Authorization: OAuth oauth_version="1.0", oauth_signature_method="PLAINTEXT", oauth_consumer_key="'.$_SESSION['app_key'].'", oauth_token="'.$_GET['oauth_token'].'", oauth_signature="'.$_SESSION['app_secret'].'&'.$_SESSION['request_token_secret'].'"\r\n' .
-                        'Content-Length: 0\r\n' /**,
-            'content' => $data **/
+                        'Content-Length: 0\r\n'
           )
         );
     $context = stream_context_create($context);
@@ -62,13 +56,7 @@ if (!file_exists ('config.php')){
   
   include('config.php');
 
-  //$uri = $_SERVER['PATH_INFO'];
   $uri = $_SERVER['REQUEST_URI'];
-//print_r("path: ".$uri."<br />");
-//print_r("path: ".$_ENV['PATH']."<br />");
-//echo "<br />Server :";
-//var_dump($_SERVER['REQUEST_URI']);
-//echo "<br />";
   if ( substr( $uri, -1 ) == '/' ){
     $uri .= 'index.html';
   }
@@ -79,26 +67,12 @@ if (!file_exists ('config.php')){
   }
 
   $url  = 'https://api-content.dropbox.com/1/files/'.$root.$uri;
-//print_r($url."<br />");
-//
-//  $ch   = curl_init();
-//  curl_setopt($ch, CURLOPT_URL, $url); 
-//  curl_setopt($ch, CURLOPT_HEADER,true);
-//  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-//  curl_setopt($ch, CURLOPT_HTTPHEADER,array(
-//    'Authorization: OAuth oauth_version="1.0", oauth_signature_method="PLAINTEXT", oauth_consumer_key="'.$app_key.'", oauth_token="'.$access_token.'", oauth_signature="'.$app_secret.'&'.$access_token_secret.'"',
-//    )
-//  );
-
-//$data = array('data' => 'this', 'data2' => 'that');
-//$data = http_build_query($data);
 
 $context =
     array('http'=>
       array(
         'method' => 'get',
-        'header' => 'Authorization: OAuth oauth_version="1.0", oauth_signature_method="PLAINTEXT", oauth_consumer_key="'.$app_key.'", oauth_token="'.$access_token.'", oauth_signature="'.$app_secret.'&'.$access_token_secret.'"' /**,
-        'content' => $data **/
+        'header' => 'Authorization: OAuth oauth_version="1.0", oauth_signature_method="PLAINTEXT", oauth_consumer_key="'.$app_key.'", oauth_token="'.$access_token.'", oauth_signature="'.$app_secret.'&'.$access_token_secret.'"'
       )
       # comment out bracket on previous line and enable these lines if required
       //),
@@ -110,35 +84,17 @@ $context =
     );
 $context = stream_context_create($context);
 
-//$response = file_get_contents($url, false, $context);
 $body = file_get_contents($url, false, $context);
-//var_dump($response);
-//print_r('<br />');
-//  $response = curl_exec($ch);
-//  $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 $headers = parse_http_response_header($http_response_header);
-//$body = $response;
 $code = $headers[0]['status']['code']; // last status code
   if($code == 404) {
     header('HTTP/1.0 404 Not Found');
     echo "404 - Not found";
   } else {
 
-//$parts = explode("\r\n\r\nHTTP/", $response);
-//$parts = (count($parts) > 1 ? 'HTTP/' : '').array_pop($parts);
-//list($header, $body) = explode("\r\n\r\n", $parts, 2);
-//var_dump($response);
-//$body = file_get_contents($url, NULL, $context);
-//$header = parse_http_response_header($http_response_header);
-//$header = get_headers();
-//$headers = apache_response_header();
-//$headers = parse_http_response_header($http_response_header);
-    //list($header, $body) = explode("\r\n\r\n", $response, 2);
-    //$headers = explode("\n",$header);
     foreach($headers[0]['fields'] as $label=>$h){
       # conditions inserted to avoid passing on Dropbox ascii charset in Content-Type in HTTP header
       # (improvement over following hack because it only touches charset and not MIME type
-//print_r($h);
       if ( stripos( $h, 'charset=' ) ) {
         if (stripos( $h, 'ascii' ) ) {
           $h = str_replace( 'us-ascii', 'UTF-8' , $h );
@@ -147,7 +103,6 @@ $code = $headers[0]['status']['code']; // last status code
           $h = str_replace( 'ASCII', 'UTF-8' , $h );
         }
       }
-//print_r($h);
       # New hack to circumvent the problem with Dropbox not passing on Last-Modified
       # by pulling it out of modified field in x-dropbox-metadata header instead
       # Note that although the header is actually called 'x-dropbox-metadata' this returns 0 because the 'x' is the first character
@@ -155,18 +110,14 @@ $code = $headers[0]['status']['code']; // last status code
         $x_dropbox_metadata = explode('"', $h);
         $key = array_search('modified', $x_dropbox_metadata);
         $datemod = $x_dropbox_metadata[$key + 2];
-//print_r('*Last-Modified: ' . $datemod . '<br />');
         header('Last-Modified: ' . $datemod);
       }
       header($label . ': ' . $h);
-//print_r($label . ': ' . $h . '<br />');
     }
     # Hack to avoid passing on Dropbox ascii charset in Content-Type in HTTP header
     # (deprecated: see above replacement conditions)
     #header('Content-Type: text/html;charset=UTF-8');
   }
-//var_dump(headers_sent());
-//var_dump(headers_list());
   if ($code == 200) echo($body);
 }
 
