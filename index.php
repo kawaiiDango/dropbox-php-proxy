@@ -89,8 +89,30 @@ if (!file_exists ('config.php')){
     list($header, $body) = explode("\r\n\r\n", $response, 2);
     $headers = explode("\n",$header);
     foreach($headers as $h){
+      # conditions inserted to avoid passing on Dropbox ascii charset in Content-Type in HTTP header
+      # (improvement over following hack because it only touches charset and not MIME type
+      if ( stripos( $h, 'charset=' ) ) {
+        if (stripos( $h, 'ascii' ) ) {
+            $h = str_replace( 'us-ascii', 'UTF-8' , $h );
+            $h = str_replace( 'ascii', 'UTF-8' , $h );
+            $h = str_replace( 'US-ASCII', 'UTF-8' , $h );
+            $h = str_replace( 'ASCII', 'UTF-8' , $h );
+        }
+      }
+      # New hack to circumvent the problem with Dropbox not passing on Last-Modified
+      # by pulling it out of modified field in x-dropbox-metadata header instead
+      # Note that although the header is actually called 'x-dropbox-metadata' this returns 0 because the 'x' is the first character
+      if ( stripos( $label, 'dropbox-metadata' ) ) {
+        $x_dropbox_metadata = explode('"', $h);
+        $key = array_search('modified', $x_dropbox_metadata);
+        $datemod = $x_dropbox_metadata[$key + 2];
+        header('Last-Modified: ' . $datemod);
+      }
       header($h);
     }
+    # Hack to avoid passing on Dropbox ascii charset in Content-Type in HTTP header
+    # (deprecated: see above replacement conditions)
+    #header('Content-Type: text/html;charset=UTF-8');
   }
   echo($body);
 }
