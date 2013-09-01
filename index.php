@@ -69,6 +69,11 @@ if (!file_exists ('config.php')){
     $uri .= 'index.html';
   }
 
+  # added in case no trailing slash, to make Dropbox work more like web server
+  if ( $uri  == '' ){
+    $uri .= '/index.html';
+  }
+    
   $url  = 'https://api-content.dropbox.com/1/files/'.$root.$uri;
 
   $ch   = curl_init();
